@@ -316,8 +316,12 @@ def _get_outer_edges(a, range):
 
     # expand empty range to avoid divide by zero
     if first_edge == last_edge:
-        first_edge = first_edge - 0.5
-        last_edge = last_edge + 0.5
+        if a.dtype.kind not in 'Mm':
+            first_edge = first_edge - 0.5
+            last_edge = last_edge + 0.5
+        else:
+            first_edge = first_edge - np.timedelta64(1)
+            last_edge = last_edge + np.timedelta64(1)
 
     return first_edge, last_edge
 
