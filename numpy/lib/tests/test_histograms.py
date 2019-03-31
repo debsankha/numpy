@@ -347,6 +347,12 @@ class TestHistogram(object):
         assert_equal(d_edge.dtype, dates.dtype)
         assert_equal(t_edge.dtype, td)
 
+    def test_datetime_auto_bins(self):
+        pass
+
+    def test_timedelta_auto_bins(self):
+        pass
+
     def do_signed_overflow_bounds(self, dtype):
         exponent = 8 * np.dtype(dtype).itemsize - 1
         arr = np.array([-2**exponent + 4, 2**exponent - 4], dtype=dtype)
