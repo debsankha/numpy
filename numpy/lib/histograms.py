@@ -320,8 +320,8 @@ def _get_outer_edges(a, range):
             first_edge = first_edge - 0.5
             last_edge = last_edge + 0.5
         else:
-            first_edge = first_edge - np.timedelta64(1)
-            last_edge = last_edge + np.timedelta64(1)
+            first_edge = first_edge - np.timedelta64(1, 's')
+            last_edge = last_edge + np.timedelta64(1, 's')
 
     return first_edge, last_edge
 
@@ -782,6 +782,7 @@ def histogram(a, bins=10, range=None, normed=None, weights=None,
     >>> plt.show()
 
     """
+    is_datetime = a.dtype.kind in 'Mm'
     a, weights = _ravel_and_check_weights(a, weights)
 
     bin_edges, uniform_bins = _get_bin_edges(a, bins, range, weights)
@@ -814,7 +815,9 @@ def histogram(a, bins=10, range=None, normed=None, weights=None,
         n = np.zeros(n_equal_bins, ntype)
 
         # Pre-compute histogram scaling factor
-        norm = n_equal_bins / _unsigned_subtract(last_edge, first_edge)
+        # NOTE: this gets used in l 846. Maybe we can cast to float here
+        if not is_datetime:
+            norm = n_equal_bins / (_unsigned_subtract(last_edge, first_edge))
 
         # We iterate over blocks here for two reasons: the first is that for
         # large arrays, it is actually faster (for example for a 10^8 array it
@@ -842,7 +845,12 @@ def histogram(a, bins=10, range=None, normed=None, weights=None,
 
             # Compute the bin indices, and for values that lie exactly on
             # last_edge we need to subtract one
-            f_indices = _unsigned_subtract(tmp_a, first_edge) * norm
+            if not is_datetime:
+                f_indices = _unsigned_subtract(tmp_a, first_edge) * norm
+            else:
+                f_indices = (_unsigned_subtract(tmp_a, first_edge) \
+                             / _unsigned_subtract(last_edge, first_edge)) \
+                             * n_equal_bins
             indices = f_indices.astype(np.intp)
             indices[indices == n_equal_bins] -= 1
 

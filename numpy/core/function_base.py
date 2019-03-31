@@ -138,7 +138,7 @@ def linspace(start, stop, num=50, endpoint=True, retstep=False, dtype=None,
         stop  = asanyarray(stop)
         dt = result_type(start, stop)
         delta = stop - start
-        # delta should have dtype timedelta
+        # y here must not have dtype == dt
         y = _nx.arange(0, num).reshape((-1,) + (1,) * ndim(delta))
 
     else:
