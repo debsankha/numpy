@@ -136,9 +136,11 @@ def linspace(start, stop, num=50, endpoint=True, retstep=False, dtype=None,
         if dtype is None:
             raise ValueError("linspace() with {} objects requires the `dtype` argument "
                     "to be set to the desired output dtype".format(start.dtype))
+        start = start.astype(dtype)
+        stop = stop.astype(dtype)
         # dt will be used as the dtype argument of arange after this if/else block ends,
         # to generate array y. Therefore it must be unitless, not timedelta or datetime.
-        dt = _nx.integer
+        dt = _nx.int64
     else:
         # Convert float/complex array scalars to float, gh-3504
         start = start * 1.0
@@ -155,25 +157,28 @@ def linspace(start, stop, num=50, endpoint=True, retstep=False, dtype=None,
     # from overriding what class is produced, and thus prevents, e.g. use of Quantities,
     # see gh-7142. Hence, we multiply in place only for standard scalar types.
     # In-place division also cannot be done for datetime64 and timedelta64.
-    _mult_inplace = _nx.isscalar(delta) and (not is_datelike)
     if num > 1:
         step = delta / div
         # The following check that step is not 0 must be done with
         # an explicit dtype at right hand side because comparing 
         # datetime or timedelta objects with (unitless) 0 is not
         # allowed
-        if _nx.any(step == _nx.array(0, asanyarray(step).dtype)):
-            # Special handling for denormal numbers, gh-5437
-            y /= div
-            if _mult_inplace:
-                y *= delta
-            else:
-                y = y * delta
+        if is_datelike:
+            y = y * step
         else:
-            if _mult_inplace:
-                y *= step
+            if _nx.any(step == 0):
+                # Special handling for denormal numbers, gh-5437
+                y /= div
+                if _nx.isscalar(delta):
+                    y *= delta
+                else:
+                    y = y * delta
             else:
-                y = y * step
+                if _nx.isscalar(delta):
+                    y *= step
+                else:
+                    y = y * step
+
     else:
         # 0 and 1 item long sequences have an undefined step
         step = NaN

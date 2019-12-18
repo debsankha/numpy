@@ -2,7 +2,7 @@ from __future__ import division, absolute_import, print_function
 
 from numpy import (
     logspace, linspace, geomspace, dtype, array, sctypes, arange, isnan,
-    ndarray, sqrt, nextafter, stack
+    ndarray, sqrt, nextafter, stack, timedelta64
     )
 from numpy.testing import (
     assert_, assert_equal, assert_raises, assert_array_equal, assert_allclose,
@@ -371,6 +371,29 @@ class TestLinspace(object):
         dt2 = array('2018-12-12 07:00:00', dtype='M8[s]')
         quarters = array([0, 15*60, 30*60, 45*60, 60*60], dtype='m8[s]')
         assert_((linspace(dt1, dt2, 5, dtype='M8[s]') == dt1 + quarters).all())
+
+    def test_datetime_uniform_precision(self):
+        for precision in ('s', 'ms', 'us', 'ns'):
+            dtype = 'M8[%s]'%precision
+            t1 = array('1969-06-06 00:00:00', dtype=dtype)
+            dt = timedelta64(1, precision)
+            N = 100
+            t2 = t1 + dt*N
+            assert_(
+                (linspace(t1, t2, N+1, dtype=dtype) == t1+dt*arange(N+1)).all()
+                )
+
+    def test_datetime_diff_dtype_precision(self):
+        t1 = array('1969-06-06 00:00:00', dtype='M8[s]')
+        for step_precision, N in zip(('s', 'ms', 'us'), (1, 1000, 1000000)):
+            dtype = 'M8[%s]'%step_precision
+            dt = timedelta64(1, step_precision)
+
+            t2 = t1 + timedelta64(1, 's')
+            res = linspace(t1, t2, N+1, dtype=dtype)
+            expected_res = t1+dt*arange(N+1)
+            assert_((res == expected_res).all())
+
 
     def test_timedelta(self):
         td1 = array(0, dtype='m8[s]')
